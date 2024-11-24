@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">android_task_list_apps</string>
+    
+    <string-array name="nama_task">
+        <item>Tugas PABA</item>
+        <item>Project ManProTI</item>
+    </string-array>
+
+    <string-array name="tanggal_task">
+        <item>26 November 2024</item>
+        <item>20 Desember 2024</item>
+    </string-array>
+
+    <string-array name="deskripsi_task">
+        <item>Membuat aplikasi android yang dapat mencatat tugas-tugas yang harus dikerjakan</item>
+        <item>Menyelesaikan project sistem keanggotaan, kelas dan absensi untuk Komunitas Katolik Sentra Evangelisasi Pribadi</item>
+    </string-array>
+</resources>

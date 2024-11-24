@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <color name="card">#E3F2FD</color>
+    <color name="delete">#D32F2F</color>
+    <color name="edit">#1976D2</color>
+    <color name="start">#388E3C</color>
+    <color name="add">#2196F3</color>
+</resources>

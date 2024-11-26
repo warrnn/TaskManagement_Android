@@ -1,23 +1,48 @@
 package paba.coba.android_task_list_apps
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import kotlin.math.log
 
 class MainActivity : AppCompatActivity() {
-    // Menggunakan lateinit karena akan membuat variabel yang non-null tetapi akan kita deklarasikan di dalam function
-    private lateinit var _namaTask : Array<String>
-    private lateinit var _tanggalTask : Array<String>
-    private lateinit var _deskripsiTask : Array<String>
+    var listTasks = mutableListOf<Task>()
 
-    private var listTasks = arrayListOf<Task>()
+    private lateinit var _rvTask: RecyclerView
+    private lateinit var taskAdapter: AdapterRecView
+
+    private val IntentTaskLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val data = result.data
+                val nama = data?.getStringExtra("NAMA")
+                val tanggal = data?.getStringExtra("TANGGAL")
+                val deskripsi = data?.getStringExtra("DESKRIPSI")
+
+                val isEdit = data?.getBooleanExtra("IS_EDIT", false) ?: false
+                val position = data?.getIntExtra("POSITION", -1) ?: -1
+
+                Log.d("MainActivity", "isEdit: $isEdit, position: $position")
+                if (isEdit && position != -1) {
+                    listTasks[position] = Task(nama!!, tanggal!!, deskripsi!!, false, false)
+                    taskAdapter.notifyItemChanged(position)
+                } else {
+                    val task = Task(nama!!, tanggal!!, deskripsi!!, false, false)
+                    listTasks.add(task)
+                    taskAdapter.notifyDataSetChanged()
+                }
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,34 +54,60 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        var _rvTask = findViewById<RecyclerView>(R.id.rvTask)
+        _rvTask = findViewById(R.id.rvTask)
+        _rvTask.layoutManager = LinearLayoutManager(this)
+        taskAdapter = AdapterRecView(listTasks)
+        _rvTask.adapter = taskAdapter
 
-        fun loadData() {
-            _namaTask = resources.getStringArray(R.array.nama_task)
-            _tanggalTask = resources.getStringArray(R.array.tanggal_task)
-            _deskripsiTask = resources.getStringArray(R.array.deskripsi_task)
+        var _addTaskBtn = findViewById<Button>(R.id.addTaskBtn)
+
+        _addTaskBtn.setOnClickListener {
+            val intent = Intent(this@MainActivity, AddOrEditTask::class.java)
+            IntentTaskLauncher.launch(intent)
         }
 
-        fun addData() {
-            // Dengan menggunakan .indices maka position akan berada pada index yang ada pada data yang sudah siapkan melalui function loadData()
-            for (position in _namaTask.indices) {
-                val data = Task(
-                    _namaTask[position],
-                    _tanggalTask[position],
-                    _deskripsiTask[position]
-                )
-                listTasks.add(data)
+        taskAdapter.setOnItemClickCallback(object : AdapterRecView.OnItemClickCallback {
+            override fun onEditClicked(data: Task) {
+                val intent = Intent(this@MainActivity, AddOrEditTask::class.java).apply {
+                    putExtra("DATA", data)
+                    putExtra("POSITION", listTasks.indexOf(data))
+                }
+                IntentTaskLauncher.launch(intent)
             }
-        }
 
-        fun showData() {
-            _rvTask.layoutManager = LinearLayoutManager(this)
-            _rvTask.adapter = AdapterRecView(listTasks)
-        }
+            override fun onDeleteClicked(position: Int) {
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("Delete Task")
+                    .setMessage("Are you sure you want to delete this task?")
+                    .setPositiveButton("Delete",
+                        { dialog, which ->
+                            listTasks.removeAt(position)
+                            taskAdapter.notifyItemRemoved(position)
+                        })
+                    .setNegativeButton("Cancel",
+                        { dialog, which ->
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Task not deleted",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    ).show()
+            }
 
-        // Memanggil ketiga fungsi yang sudah dibuat pada onCreate() dengan urutan yang benar.
-        loadData()
-        addData()
-        showData()
+            override fun onWorkClicked(position: Int) {
+                var task = listTasks[position]
+                when {
+                    task.isStart && !task.isDone -> {
+                        task.isDone = true // Mark the task as done
+                    }
+
+                    !task.isStart -> {
+                        task.isStart = true // Start the task
+                    }
+                }
+                taskAdapter.notifyItemChanged(position) // Refresh the item in RecyclerView
+            }
+        })
     }
 }
